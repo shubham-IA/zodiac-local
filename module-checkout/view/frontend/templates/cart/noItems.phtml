@@ -1,0 +1,51 @@
+<?php
+/**
+ * Copyright © Magento, Inc. All rights reserved.
+ * See COPYING.txt for license details.
+ */
+
+/**  @var $block \Magento\Checkout\Block\Cart */
+?>
+<div class="cart-empty">
+    <?= $block->getChildHtml('checkout_cart_empty_widget') ?>
+    <p><?= $block->escapeHtml(__('You have no items in your shopping cart.')) ?></p>
+    <p><?= $block->escapeHtml(
+        __(
+            'Click <a href="%1">here</a> to continue shopping.',
+            $block->escapeUrl($block->getContinueShoppingUrl())
+        ),
+        ['a']
+    ) ?>
+    </p>
+    <?= $block->getChildHtml('shopping.cart.table.after') ?>
+</div>
+<script type="text/x-magento-init">
+{
+    "*": {
+        "Magento_Checkout/js/empty-cart": {}
+    }
+}
+</script>
+
+<?php 
+
+
+$objectManager = \Magento\Framework\App\ObjectManager::getInstance();
+$_checkoutSession = $objectManager->create('\Magento\Checkout\Model\Session');
+$_quoteFactory = $objectManager->create('\Magento\Quote\Model\QuoteFactory');
+
+$order = $_checkoutSession->getLastRealOrder();
+$quote = $_quoteFactory->create()->loadByIdWithoutStore($order->getQuoteId());
+
+if ($quote->getId()) {
+	$quote->setIsActive(1)->setReservedOrderId(null)->save();
+	$_checkoutSession->replaceQuote($quote);
+	
+	$objectManager->create('\Magento\Framework\Message\ManagerInterface')->addWarningMessage('Payment Failed.');
+	$redirect = $objectManager->get('\Magento\Framework\App\Response\Http');
+	$redirect->setRedirect($block->getBaseUrl().'checkout/cart'); 
+	
+	
+}
+
+?>
